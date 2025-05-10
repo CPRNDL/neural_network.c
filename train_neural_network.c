@@ -13,7 +13,7 @@
 
 
 //상수 매크로 선언: 여러 상수들을 조정하기 쉽도록
-#define DATA 60000      //데이터 수
+#define DATA 1000      //데이터 수
 #define INPUT 784       //데이터 크기 -> 784 = 28 * 28
 #define HIDDEN 20       //은닉층 노드 수
 #define OUTPUT 4        //출력층 노드 수 -> 출력층은 0~1 사이의 값을 가지기 때문에 10진수 숫자 예측을 위해 4비트로 설정
@@ -72,7 +72,7 @@ void LoadInputData(const char* filename){           //파일 이름이 배열의
                 printf("Error in reading file\n");  //오류 메시지 출력
                 exit(1);                            //비정상 종료
             }
-            train[i][j]=(double)temp;               //여러 연산을 위해 데이터를 double로 넣기
+            train[i][j]=(double)temp/255;
         }
     }
     fclose(fp);     //파일 닫기
