@@ -23,7 +23,9 @@
 
 //전역 변수 선언
 double x_train[DATA][INPUT];    //학습 데이터
-int y_train[DATA];              //정답 데이터
+int y_train[DATA];              //학습 정답 데이터
+double x_test[DATA][INPUT];     //테스트 데이터
+int y_test[DATA];               //테스트 정답 데이터
 
 double w_ih[HIDDEN][INPUT];     //입력층 -> 은닉층 가중치
 double w_ho[OUTPUT][HIDDEN];    //은닉층 -> 출력층 가중치
@@ -68,7 +70,7 @@ void load_data(const char* filename){           //파일 이름이 배열의 포
                 printf("Error in reading file\n");  //오류 메시지 출력
                 exit(1);                            //비정상 종료
             }
-            x_train[i][j]=(double)temp/255;
+            x_train[i][j]=(double)temp/255;         //데이터 넣기
         }
     }
     fclose(fp);     //파일 닫기
@@ -78,15 +80,15 @@ void load_data(const char* filename){           //파일 이름이 배열의 포
 //가중치 편향 초기화 함수
 void init_parameters(){
     for(int i=0; i<HIDDEN; i++){
-        b_h[i]=random(INPUT);
+        b_h[i]=random(INPUT);           //은닉층 편향을 무작위로 설정
         for(int j=0; j<INPUT; j++){
-            w_ih[i][j]=random(INPUT);
+            w_ih[i][j]=random(INPUT);   //입력층->은닉층 가중치를 무작위로 설정
         }
     }
     for(int i=0; i<OUTPUT; i++){
-        b_o[i]=random(HIDDEN);
+        b_o[i]=random(HIDDEN);          //출력층 편향을 무작위로 설정
         for(int j=0; j<HIDDEN; j++){
-            w_ho[i][j]=random(HIDDEN);
+            w_ho[i][j]=random(HIDDEN);  //은닉층->출력층 가중치를 무작위로 설정
         }
     }
 }
@@ -94,44 +96,44 @@ void init_parameters(){
 
 //데이터 학습 루프 함수들
 //순전파
-void forward(int index){
-    double sum;
+void forward(int index){                        //k번째 데이터를 입력으로 받음
+    double sum;                                 //누적합 선언
     for(int i=0; i<HIDDEN; i++){
-        sum=b_h[i];
+        sum=b_h[i];                             //누적합에 은닉층 편향 더함
         for(int j=0; j<INPUT; j++){
-            sum+=w_ih[i][j]*x_train[index][j];
+            sum+=w_ih[i][j]*x_train[index][j];  //누적합에 은닉층 가중입력값을 더함
         }
-        a_h[i]=sigmoid(sum);
+        a_h[i]=sigmoid(sum);                    //은닉층에 누적합의 활성화함숫값을 대입
     }
 
     for(int i=0; i<OUTPUT; i++){
-        sum=b_o[i];
+        sum=b_o[i];                             //누적합에 출력층 편향 더함
         for(int j=0; j<HIDDEN; j++){
-            sum+=w_ho[i][j]*a_h[j];
+            sum+=w_ho[i][j]*a_h[j];             //누적합에 출력층 가중입력값을 더함
         }
-        a_o[i]=sigmoid(sum);
+        a_o[i]=sigmoid(sum);                    //출력층에 누적합의 활성화함숫값을 대입
     }
 }
 
 //오차역전파
-double backward(int label){
-    double C=0.0;
+double backward(int label){                     //정답 레이블을 받음
+    double C=0.0;                               //비용함숫값 선언
     for(int i=0; i<OUTPUT; i++){
-        int temp1=(label>>i)&1;
-        double temp2=(double)temp1;
-        double temp3=a_o[i];
-        C+=0.5*pow(temp2-temp3, 2);
-        d_o[i]=(temp3-temp2)*temp3*(1-temp3);
+        int temp1=(label>>i)&1;                 //오른쪽 비트시프트 값이 1이면 1, 0이면 0
+        double temp2=(double)temp1;             //temp1을 double로 저장
+        double temp3=a_o[i];                    //출력층값
+        C+=0.5*pow(temp2-temp3, 2);             //비용함숫값에 레이블과 출력층값의 차를 제곱하고 1/2을 곱한 값을 더함
+        d_o[i]=(temp3-temp2)*temp3*(1-temp3);   //출력층의 오차값(비용함수의 출력층 편미분값)
     }
     for(int i=0; i<HIDDEN; i++){
-        double sum=0.0;
+        double sum=0.0;                         //누적합 선언
         for(int j=0; j<OUTPUT; j++){
-            sum+=d_o[j]*w_ho[j][i];
+            sum+=d_o[j]*w_ho[j][i];             //누적합에 출력층 오차와 은닉층->출력층 가중치를 곱한 값을 더함
         }
-        double temp=a_h[i];
-        d_h[i]=sum*temp*(1-temp);
+        double temp=a_h[i];                     //출력층 가중입력값
+        d_h[i]=sum*temp*(1-temp);               //은닉층의 오차값(비용함수의 가중치 편미분값, 비용함수의 편향 편미분값)
     }
-    return C;
+    return C;                                   //최종 비용함숫값 return
 }
 
 //파라미터 업데이트 함수
