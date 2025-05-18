@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <time.h>
 
 
 //상수 매크로 선언
@@ -52,7 +51,7 @@ double random(int n) {
 
 
 //데이터 파일 읽기 함수
-void load_data(const char* filename){           //파일 이름이 배열의 포인터를 가리키므로 const char 포인터로 받음
+void load_data(const char* filename){               //파일 이름이 배열의 포인터를 가리키므로 const char 포인터로 받음
     FILE *fp = fopen(filename, "r");                //fopen으로 파일 열기 -> return 주소 값을 FILE 구조체 포인터에 넣음
     if(fp==NULL){                                   //포인터가 NULL을 반환 -> 인식 못 함
         printf("Failed to open file\n");            //파일 열기 실패 출력
@@ -64,7 +63,7 @@ void load_data(const char* filename){           //파일 이름이 배열의 포
             printf("Error in reading file\n");      //오류 메시지 출력
             exit(1);                                //비정상 종료
         }
-        y_train[i]=temp;                              //정답 데이터 넣기
+        y_train[i]=temp;                            //정답 데이터 넣기
         for(int j=0; j<INPUT; j++){                 //28*28 만큼 반복
             if(fscanf(fp, "%d", &temp)!=1){         //fscanf 실패시
                 printf("Error in reading file\n");  //오류 메시지 출력
@@ -96,77 +95,76 @@ void init_parameters(){
 
 //데이터 학습 루프 함수들
 //순전파
-void forward(int index){                        //k번째 데이터를 입력으로 받음
+void forward(int index){                        //k번째 데이터 인덱스를 받음
     double sum;                                 //누적합 선언
     for(int i=0; i<HIDDEN; i++){
         sum=b_h[i];                             //누적합에 은닉층 편향 더함
         for(int j=0; j<INPUT; j++){
-            sum+=w_ih[i][j]*x_train[index][j];  //누적합에 은닉층 가중입력값을 더함
+            sum+=w_ih[i][j]*x_train[index][j];  //누적합에 은닉층 가중 입력값을 더함
         }
-        a_h[i]=sigmoid(sum);                    //은닉층에 누적합의 활성화함숫값을 대입
+        a_h[i]=sigmoid(sum);                    //은닉층에 누적합의 활성화 함숫값을 대입
     }
 
     for(int i=0; i<OUTPUT; i++){
         sum=b_o[i];                             //누적합에 출력층 편향 더함
         for(int j=0; j<HIDDEN; j++){
-            sum+=w_ho[i][j]*a_h[j];             //누적합에 출력층 가중입력값을 더함
+            sum+=w_ho[i][j]*a_h[j];             //누적합에 출력층 가중 입력값을 더함
         }
-        a_o[i]=sigmoid(sum);                    //출력층에 누적합의 활성화함숫값을 대입
+        a_o[i]=sigmoid(sum);                    //출력층에 누적합의 활성화 함숫값을 대입
     }
 }
 
 //오차역전파
 double backward(int label){                     //정답 레이블을 받음
-    double C=0.0;                               //비용함숫값 선언
+    double C=0.0;                               //비용 함숫값 선언
     for(int i=0; i<OUTPUT; i++){
         int temp1=(label>>i)&1;                 //오른쪽 비트시프트 값이 1이면 1, 0이면 0
         double temp2=(double)temp1;             //temp1을 double로 저장
         double temp3=a_o[i];                    //출력층값
-        C+=0.5*pow(temp2-temp3, 2);             //비용함숫값에 레이블과 출력층값의 차를 제곱하고 1/2을 곱한 값을 더함
-        d_o[i]=(temp3-temp2)*temp3*(1-temp3);   //출력층의 오차값(비용함수의 출력층 편미분값)
+        C+=0.5*pow(temp2-temp3, 2);             //비용 함숫값에 레이블과 출력층값의 차를 제곱하고 1/2을 곱한 값을 더함
+        d_o[i]=(temp3-temp2)*temp3*(1-temp3);   //출력층의 오차값(비용 함수의 출력층 편미분값)
     }
     for(int i=0; i<HIDDEN; i++){
         double sum=0.0;                         //누적합 선언
         for(int j=0; j<OUTPUT; j++){
-            sum+=d_o[j]*w_ho[j][i];             //누적합에 출력층 오차와 은닉층->출력층 가중치를 곱한 값을 더함
+            sum+=d_o[j]*w_ho[j][i];             //누적합에 출력층 오차와 은닉층 -> 출력층 가중치를 곱한 값을 더함
         }
-        double temp=a_h[i];                     //출력층 가중입력값
-        d_h[i]=sum*temp*(1-temp);               //은닉층의 오차값(비용함수의 가중치 편미분값, 비용함수의 편향 편미분값)
+        double temp=a_h[i];                     //출력층 가중 입력값
+        d_h[i]=sum*temp*(1-temp);               //은닉층의 오차값(비용 함수의 가중치 편미분값, 비용 함수의 편향 편미분값)
     }
-    return C;                                   //최종 비용함숫값 return
+    return C;                                   //최종 비용 함숫값 return
 }
 
-//파라미터 업데이트 함수
-void update_parameters(int index){
+//파라미터 갱신 함수
+void update_parameters(int index){                      //k번째 데이터 인덱스를 받음
     for(int i=0; i<OUTPUT; i++){
         for(int j=0; j<HIDDEN; j++){
-            w_ho[i][j]-=ETA*d_o[i]*a_h[j];
+            w_ho[i][j]-=ETA*d_o[i]*a_h[j];              //경사하강법으로 은닉층 -> 출력층 가중치 갱신
         }
-        b_o[i]-=ETA*d_o[i];
+        b_o[i]-=ETA*d_o[i];                             //출력층 편향 갱신
     }
     for(int i=0; i<HIDDEN; i++){
         for(int j=0; j<INPUT; j++){
-            w_ih[i][j]-=ETA*d_h[i]*x_train[index][j];
+            w_ih[i][j]-=ETA*d_h[i]*x_train[index][j];   //입력층 -> 은닉층 가중치 갱신
         }
-        b_h[i]-=ETA*d_h[i];
+        b_h[i]-=ETA*d_h[i];                             //은닉층 편향 갱신
     }
 }
 
 
 int main(){
-    load_data("train.txt");         //데이터 읽기
-    srand((unsigned int)time(NULL));    //현재 시간을 시드로 사용
+    load_data("train.txt");     //훈련 데이터 읽기
 
-    init_parameters();
+    init_parameters();          //파라미터 초기화
 
     for(int epoch=0; epoch<EPOCH; epoch++){
-        double epoch_C=0.0;
+        double epoch_C=0.0;                     //epoch 비용 함숫값 선언
         for(int i=0; i<DATA; i++){
-            int label_index=y_train[i];
-            forward(i);
-            epoch_C+=backward(label_index);
-            update_parameters(i);
+            int label_index=y_train[i];         //k번째 데이터의 레이블
+            forward(i);                         //순전파
+            epoch_C+=backward(label_index);     //역전파, 비용 함숫값을 받음
+            update_parameters(i);               //파라미터 갱신
         }
-        printf("[Epoch %d] Cost: %lf\n", epoch+1, epoch_C/DATA);
+        printf("[Epoch %d] Cost: %lf\n", epoch+1, epoch_C/DATA);    //매 epoch마다 평균 비용 함숫값 출력
     }
 }
