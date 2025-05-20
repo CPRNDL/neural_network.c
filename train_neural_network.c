@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 
 //상수 매크로 선언
@@ -152,10 +153,28 @@ void update_parameters(int index){                      //k번째 데이터 인�
 }
 
 
-int main(){
-    load_data("train.txt");     //훈련 데이터 읽기
+//데이터 섞는 함수
+void shuffle(){
+    int i=0, temp;
+    while(i<DATA){
+        srand((unsigned int)time(NULL));
+        temp=rand(DATA-1);
+        if(shuffle[temp]==0){
+            shuffle[temp]=i;
+            i++;
+        }
+    }
+    for(int j=0; j<DATA; j++){
+        
+    }
+}
 
-    init_parameters();          //파라미터 초기화
+
+int main(){
+    load_data("train.txt");             //훈련 데이터 읽기
+    srand((unsigned int)time(NULL));    //현재 시간을 시드로 사용
+
+    init_parameters();                  //파라미터 초기화
 
     for(int epoch=0; epoch<EPOCH; epoch++){
         double epoch_C=0.0;                     //epoch 비용 함숫값 선언
