@@ -17,7 +17,7 @@
 #define INPUT 784       //데이터 크기 -> 784 = 28 * 28
 #define HIDDEN 20       //은닉층 노드 수
 #define OUTPUT 4        //출력층 노드 수 -> 출력층은 0~1 사이의 값을 가지기 때문에 10진수 숫자 예측을 위해 4비트로 설정
-#define ETA 0.1         //학습률(η)
+#define ETA 0.01        //학습률(η)
 #define EPOCH 100       //학습 횟수
 
 
@@ -60,14 +60,14 @@ void load_data(const char* filename){               //파일 이름이 배열의
     }
     for(int i=0; i<DATA; i++){                      //데이터 수 만큼 반복
         int temp;                                   //임시 변수
-        if(fscanf(fp, "%d", &temp)!=1){             //fscanf 실패시
-            printf("Error in reading file\n");      //오류 메시지 출력
+        if(fscanf(fp, "%d", &temp)==EOF){           //fscanf 실패시
+            printf("Error in scanning label\n");    //오류 메시지 출력
             exit(1);                                //비정상 종료
         }
         y_train[i]=temp;                            //정답 데이터 넣기
         for(int j=0; j<INPUT; j++){                 //28*28 만큼 반복
-            if(fscanf(fp, "%d", &temp)!=1){         //fscanf 실패시
-                printf("Error in reading file\n");  //오류 메시지 출력
+            if(fscanf(fp, "%d", &temp)==EOF){       //fscanf 실패시
+                printf("Error in scanning data\n"); //오류 메시지 출력
                 exit(1);                            //비정상 종료
             }
             x_train[i][j]=(double)temp/255;         //데이터 넣기
@@ -154,18 +154,19 @@ void update_parameters(int index){                      //k번째 데이터 인�
 
 
 //데이터 섞는 함수
-void shuffle(){
-    int i=0, temp;
-    while(i<DATA){
-        srand((unsigned int)time(NULL));
-        temp=rand(DATA-1);
-        if(shuffle[temp]==0){
-            shuffle[temp]=i;
-            i++;
+void shuffle_data(){
+    srand((unsigned)time(NULL));
+
+    for(int i=DATA-1; i>0; i--){
+        int j = rand() % (i + 1);
+        for(int k=0; k<INPUT; k++){
+            double tempx = x_train[i][k];
+            x_train[i][k] = x_train[j][k];
+            x_train[j][k] = tempx;
         }
-    }
-    for(int j=0; j<DATA; j++){
-        
+        int tempy = y_train[i];
+        y_train[i] = y_train[j];
+        y_train[j] = tempy;
     }
 }
 
@@ -178,6 +179,7 @@ int main(){
 
     for(int epoch=0; epoch<EPOCH; epoch++){
         double epoch_C=0.0;                     //epoch 비용 함숫값 선언
+        shuffle_data();
         for(int i=0; i<DATA; i++){
             int label_index=y_train[i];         //k번째 데이터의 레이블
             forward(i);                         //순전파
