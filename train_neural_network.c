@@ -13,19 +13,20 @@
 
 
 //상수 매크로 선언
-#define DATA 1000       //데이터 수
+#define TRAIN_DATA 5000 //훈련 데이터 수
+#define TEST_DATA 1000  //테스트 데이터 수수
 #define INPUT 784       //데이터 크기 -> 784 = 28 * 28
 #define HIDDEN 20       //은닉층 노드 수
 #define OUTPUT 4        //출력층 노드 수 -> 출력층은 0~1 사이의 값을 가지기 때문에 10진수 숫자 예측을 위해 4비트로 설정
 #define ETA 0.01        //학습률(η)
-#define EPOCH 100       //학습 횟수
+#define EPOCH 1       //학습 횟수
 
 
 //전역 변수 선언
-double x_train[DATA][INPUT];    //학습 데이터
-int y_train[DATA];              //학습 정답 데이터
-double x_test[DATA][INPUT];     //테스트 데이터
-int y_test[DATA];               //테스트 정답 데이터
+double x_train[TRAIN_DATA][INPUT];    //학습 데이터
+int y_train[TRAIN_DATA];              //학습 정답 데이터
+double x_test[TEST_DATA][INPUT];     //테스트 데이터
+int y_test[TEST_DATA];               //테스트 정답 데이터
 
 double w_ih[HIDDEN][INPUT];     //입력층 -> 은닉층 가중치
 double w_ho[OUTPUT][HIDDEN];    //은닉층 -> 출력층 가중치
@@ -52,25 +53,25 @@ double random(int n) {
 
 
 //데이터 파일 읽기 함수
-void load_data(const char* filename){               //파일 이름이 배열의 포인터를 가리키므로 const char 포인터로 받음
+void load_data(const char* filename, double x[][INPUT], int y[], int data){    //파일 이름이 배열의 포인터를 가리키므로 const char 포인터로 받음
     FILE *fp = fopen(filename, "r");                //fopen으로 파일 열기 -> return 주소 값을 FILE 구조체 포인터에 넣음
     if(fp==NULL){                                   //포인터가 NULL을 반환 -> 인식 못 함
         printf("Failed to open file\n");            //파일 열기 실패 출력
         exit(1);                                    //비정상 종료
     }
-    for(int i=0; i<DATA; i++){                      //데이터 수 만큼 반복
+    for(int i=0; i<data; i++){                      //데이터 수 만큼 반복
         int temp;                                   //임시 변수
         if(fscanf(fp, "%d", &temp)==EOF){           //fscanf 실패시
             printf("Error in scanning label\n");    //오류 메시지 출력
             exit(1);                                //비정상 종료
         }
-        y_train[i]=temp;                            //정답 데이터 넣기
+        y[i]=temp;                                  //정답 데이터 넣기
         for(int j=0; j<INPUT; j++){                 //28*28 만큼 반복
             if(fscanf(fp, "%d", &temp)==EOF){       //fscanf 실패시
                 printf("Error in scanning data\n"); //오류 메시지 출력
                 exit(1);                            //비정상 종료
             }
-            x_train[i][j]=(double)temp/255;         //데이터 넣기
+            x[i][j]=(double)temp/255;               //데이터 넣기
         }
     }
     fclose(fp);     //파일 닫기
@@ -154,38 +155,52 @@ void update_parameters(int index){                      //k번째 데이터 인�
 
 
 //데이터 섞는 함수
-void shuffle_data(){
+void shuffle_data(double x[][INPUT], int y[], int data){
     srand((unsigned)time(NULL));
 
-    for(int i=DATA-1; i>0; i--){
+    for(int i=data-1; i>0; i--){
         int j = rand() % (i + 1);
         for(int k=0; k<INPUT; k++){
-            double tempx = x_train[i][k];
-            x_train[i][k] = x_train[j][k];
-            x_train[j][k] = tempx;
+            double tempx = x[i][k];
+            x[i][k] = x[j][k];
+            x[j][k] = tempx;
         }
-        int tempy = y_train[i];
-        y_train[i] = y_train[j];
-        y_train[j] = tempy;
+        int tempy = y[i];
+        y[i] = y[j];
+        y[j] = tempy;
     }
 }
 
 
+//테스트 함수
+void test(){
+
+}
+
+
 int main(){
-    load_data("train.txt");             //훈련 데이터 읽기
-    srand((unsigned int)time(NULL));    //현재 시간을 시드로 사용
+    load_data("train.txt", x_train, y_train, TRAIN_DATA);   //훈련 데이터 읽기
+    load_data("test.txt", x_test, y_test, TEST_DATA);      //테스트 데이터 읽기
+    srand((unsigned int)time(NULL));            //시드 초기화
 
     init_parameters();                  //파라미터 초기화
 
     for(int epoch=0; epoch<EPOCH; epoch++){
         double epoch_C=0.0;                     //epoch 비용 함숫값 선언
-        shuffle_data();
-        for(int i=0; i<DATA; i++){
+        shuffle_data(x_train, y_train, TRAIN_DATA);                         //데이터 섞기
+        for(int i=0; i<TRAIN_DATA; i++){
             int label_index=y_train[i];         //k번째 데이터의 레이블
             forward(i);                         //순전파
             epoch_C+=backward(label_index);     //역전파, 비용 함숫값을 받음
             update_parameters(i);               //파라미터 갱신
         }
-        printf("[Epoch %d] Cost: %lf\n", epoch+1, epoch_C/DATA);    //매 epoch마다 평균 비용 함숫값 출력
+        printf("[Epoch %d] Cost: %lf\n", epoch+1, epoch_C/TRAIN_DATA);    //매 epoch마다 평균 비용 함숫값 출력
+    }
+
+    char answer;
+    printf("Training is complete. Would you like to proceed with the test? [Y/N]\n");
+    scanf("%c", &answer);
+    if(answer == 'Y' || answer == 'y'){
+        return 0;
     }
 }
