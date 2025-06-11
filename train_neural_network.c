@@ -13,13 +13,13 @@
 
 
 //상수 매크로 선언
-#define TRAIN_DATA 5000 //훈련 데이터 수
-#define TEST_DATA 1000  //테스트 데이터 수수
-#define INPUT 784       //데이터 크기 -> 784 = 28 * 28
-#define HIDDEN 20       //은닉층 노드 수
-#define OUTPUT 4        //출력층 노드 수 -> 출력층은 0~1 사이의 값을 가지기 때문에 10진수 숫자 예측을 위해 4비트로 설정
-#define ETA 0.01        //학습률(η)
-#define EPOCH 1       //학습 횟수
+#define TRAIN_DATA 10000 //훈련 데이터 수
+#define TEST_DATA 1000   //테스트 데이터 수
+#define INPUT 784        //데이터 크기 -> 784 = 28 * 28
+#define HIDDEN 30        //은닉층 노드 수
+#define OUTPUT 10        //출력층 노드 수 -> 출력층은 0~1 사이의 값을 가지기 때문에 10개로 설정
+#define ETA 0.05         //학습률(η)
+#define EPOCH 10         //학습 횟수
 
 
 //전역 변수 선언
@@ -120,19 +120,18 @@ void forward(int index){                        //k번째 데이터 인덱스를
 double backward(int label){                     //정답 레이블을 받음
     double C=0.0;                               //비용 함숫값 선언
     for(int i=0; i<OUTPUT; i++){
-        int temp1=(label>>i)&1;                 //오른쪽 비트시프트 값이 1이면 1, 0이면 0
-        double temp2=(double)temp1;             //temp1을 double로 저장
-        double temp3=a_o[i];                    //출력층값
-        C+=0.5*pow(temp2-temp3, 2);             //비용 함숫값에 레이블과 출력층값의 차를 제곱하고 1/2을 곱한 값을 더함
-        d_o[i]=(temp3-temp2)*temp3*(1-temp3);   //출력층의 오차값(비용 함수의 출력층 편미분값)
+        double t = (i == label) ? 1.0 : 0.0;    //
+        double y = a_o[i];                      //
+        C += 0.5 * pow(t - y, 2);               //비용 함숫값에 레이블과 출력층값의 차를 제곱하고 1/2을 곱한 값을 더함
+        d_o[i] = (t - y) * y * (1 - y);         //출력층의 오차값(비용 함수의 출력층 편미분값)
     }
     for(int i=0; i<HIDDEN; i++){
-        double sum=0.0;                         //누적합 선언
+        double sum = 0.0;                       //누적합 선언
         for(int j=0; j<OUTPUT; j++){
-            sum+=d_o[j]*w_ho[j][i];             //누적합에 출력층 오차와 은닉층 -> 출력층 가중치를 곱한 값을 더함
+            sum += d_o[j] * w_ho[j][i];         //누적합에 출력층 오차와 은닉층 -> 출력층 가중치를 곱한 값을 더함
         }
-        double temp=a_h[i];                     //출력층 가중 입력값
-        d_h[i]=sum*temp*(1-temp);               //은닉층의 오차값(비용 함수의 가중치 편미분값, 비용 함수의 편향 편미분값)
+        double h = a_h[i];                      //출력층 가중 입력값
+        d_h[i] = sum * h * (1 - h);             //은닉층의 오차값(비용 함수의 가중치 편미분값, 비용 함수의 편향 편미분값)
     }
     return C;                                   //최종 비용 함숫값 return
 }
@@ -172,9 +171,33 @@ void shuffle_data(double x[][INPUT], int y[], int data){
 }
 
 
-//테스트 함수
-void test(){
+//예측 함수
+void predict(double x[INPUT], double* result){
+    double sum;
+    for(int i=0; i<HIDDEN; i++){
+        sum = b_h[i];
+        for(int j=0; j<INPUT; j++){
+            sum += w_ih[i][j] * x[j];
+        }
+        a_h[i] = sigmoid(sum);
+    }
 
+    for(int i=0; i<OUTPUT; i++){
+        sum = b_o[i];
+        for(int j=0; j<HIDDEN; j++)
+            sum += w_ho[i][j] * a_h[j];
+        a_o[i] = sigmoid(sum);
+    }
+
+    int M_index = 0;
+    double M_value = a_o[0];
+    for(int i=1; i<OUTPUT; i++){
+        if(a_o[i] > M_value){
+            M_value = a_o[i];
+            M_index = i;
+        }
+    }
+    *result = (double)M_index;
 }
 
 
@@ -185,6 +208,7 @@ int main(){
 
     init_parameters();                  //파라미터 초기화
 
+    printf("Training begins...\n");
     for(int epoch=0; epoch<EPOCH; epoch++){
         double epoch_C=0.0;                     //epoch 비용 함숫값 선언
         shuffle_data(x_train, y_train, TRAIN_DATA);                         //데이터 섞기
@@ -197,10 +221,36 @@ int main(){
         printf("[Epoch %d] Cost: %lf\n", epoch+1, epoch_C/TRAIN_DATA);    //매 epoch마다 평균 비용 함숫값 출력
     }
 
-    char answer;
-    printf("Training is complete. Would you like to proceed with the test? [Y/N]\n");
-    scanf("%c", &answer);
-    if(answer == 'Y' || answer == 'y'){
-        return 0;
+    printf("Training complete...\nTesting begins...\n");
+
+    int correct = 0;
+    for(int i=0; i<TEST_DATA; i++){
+        double pred;
+        predict(x_test[i], &pred);
+        if((int)pred == y_test[i]){
+            correct++;
+            printf("Correct\n");
+        }else{
+            printf("Incorrect\n");
+        }
     }
+    double acc = (double)correct / TEST_DATA * 100.0;
+    printf("Accuracy: %.2lf%%\n", acc);
+
+    printf("Testing complete...\n\n");
+    double x_user[INPUT];
+    printf("Please enter 784 values (0~255)\n");
+    for(int i=0; i<INPUT; i++){
+        int temp;
+        if(scanf("%d", &temp) != 1){
+            printf("Invalid input\nPlease enter 0~255 value\n");
+            exit(1);
+        }
+        if(temp < 0) temp = 0;
+        if(temp > 255) temp = 255;
+        x_user[i] = temp / 255.0;
+    }
+    double user_result;
+    predict(x_user, &user_result);
+    printf("The number is %d\n", (int)user_result);
 }
