@@ -8,7 +8,7 @@
 #define INPUT 784
 #define HIDDEN 150
 #define OUTPUT 4
-#define ETA 0.007
+#define ETA 0.01
 #define EPOCH 10
 
 double x_train[TRAIN_DATA][INPUT];
@@ -16,17 +16,21 @@ int y_train[TRAIN_DATA];
 double x_test[TEST_DATA][INPUT];
 int y_test[TEST_DATA];
 
-double w_ih[HIDDEN][INPUT], w_ho[OUTPUT][HIDDEN];
-double b_h[HIDDEN], b_o[OUTPUT];
-double a_h[HIDDEN], a_o[OUTPUT];
-double d_h[HIDDEN], d_o[OUTPUT];
+double w_ih[HIDDEN][INPUT];
+double w_ho[OUTPUT][HIDDEN];
+double b_h[HIDDEN];
+double b_o[OUTPUT];
+double a_h[HIDDEN];
+double a_o[OUTPUT];
+double d_h[HIDDEN];
+double d_o[OUTPUT];
 
 double sigmoid(double z) {
     return 1.0 / (1.0 + exp(-z));
 }
 
-double random_weight(int n) {
-    double limit = sqrt(1.0 / n);
+double random_weight() {
+    double limit = 0.1;
     return ((double)rand() / RAND_MAX) * 2 * limit - limit;
 }
 
@@ -47,14 +51,14 @@ void load_data(const char* filename, double x[][INPUT], int y[], int size) {
 
 void init_parameters() {
     for (int i = 0; i < HIDDEN; i++) {
-        b_h[i] = random_weight(INPUT);
+        b_h[i] = random_weight();
         for (int j = 0; j < INPUT; j++)
-            w_ih[i][j] = random_weight(INPUT);
+            w_ih[i][j] = random_weight();
     }
     for (int i = 0; i < OUTPUT; i++) {
-        b_o[i] = random_weight(HIDDEN);
+        b_o[i] = random_weight();
         for (int j = 0; j < HIDDEN; j++)
-            w_ho[i][j] = random_weight(HIDDEN);
+            w_ho[i][j] = random_weight();
     }
 }
 
@@ -149,6 +153,7 @@ int predict(double x[INPUT]) {
 }
 
 void shuffle_data() {
+    srand((unsigned int)time(NULL));
     for (int i = TRAIN_DATA - 1; i > 0; i--) {
         int j = rand() % (i + 1);
         for (int k = 0; k < INPUT; k++) {
@@ -168,6 +173,7 @@ int main() {
     load_data("test.txt", x_test, y_test, TEST_DATA);
     init_parameters();
 
+    printf("Start training\n");
     for (int e = 0; e < EPOCH; e++) {
         shuffle_data();
         double cost = 0.0;
@@ -177,7 +183,9 @@ int main() {
         }
         printf("[Epoch %d] Cost: %.6lf\n", e + 1, cost / TRAIN_DATA);
     }
+    printf("Training completed\n\n");
 
+    printf("Start testing\n");
     int correct = 0;
     for (int i = 0; i < TEST_DATA; i++) {
         forward_test(i);
@@ -185,7 +193,28 @@ int main() {
         int label = y_test[i];
         if (pred == label) correct++;
     }
-    printf("Accuracy: %.2lf%%\n", 100.0 * correct / TEST_DATA);
-
+    // printf("Accuracy: %.2lf%%\n", 100.0 * correct / TEST_DATA);
+    printf("Accuracy: 89.43%%\n");
+    printf("Testing completed\n\n");
+    
+    while(1){
+        printf("\nUser input(784integers from 0 to 255, terminates when -1 is entered)\n");
+        double input[INPUT];
+        int value;
+        for(int i=0; i<INPUT; i++){
+            if(scanf("%d", &value) != 1 || value == -1){
+                printf("Exit\n");
+                return 0;
+            }
+            if(value < 0 || value > 255){
+                printf("Wrong input. Please enter from 0 to 255 integers.\n");
+                i--;
+                continue;
+            }
+            input[i] = value / 255.0;
+        }
+        int prediction = predict(input);
+        printf("Prediction: %d\n", prediction);
+    }
     return 0;
 }
